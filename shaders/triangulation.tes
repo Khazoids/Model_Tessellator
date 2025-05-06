@@ -1,0 +1,46 @@
+#version 410 core
+
+layout( quads, equal_spacing, ccw) in;
+
+uniform sampler2D displacementMap;
+uniform float displacementFactor;
+uniform mat4 mvp;
+
+in TCS_OUT {
+	vec3 Position;
+	vec3 Normal;
+	vec2 TexCoord;
+} tes_in[];
+
+out TES_OUT {
+	vec3 Position;
+	vec3 Normal;
+	vec2 TexCoord;
+} tes_out;
+
+vec2 interpolate2D(vec2 v0, vec2 v1, vec2 v2, vec2 v3)
+{
+	vec2 a = mix(v0, v1, gl_TessCoord.x);
+    vec2 b = mix(v3, v2, gl_TessCoord.x);
+    return mix(a, b, gl_TessCoord.y);
+}
+
+vec3 interpolate3D(vec3 v0, vec3 v1, vec3 v2, vec3 v3)
+{
+	vec3 a = mix(v0, v1, gl_TessCoord.x);
+    vec3 b = mix(v3, v2, gl_TessCoord.x);
+    return mix(a, b, gl_TessCoord.y);
+}
+
+
+void main()
+{
+	vec3 pos = interpolate3D(tes_in[0].Position, tes_in[1].Position, tes_in[2].Position, tes_in[3].Position);
+	vec3 norm = interpolate3D(tes_in[0].Normal, tes_in[1].Normal, tes_in[2].Normal, tes_in[3].Normal);
+	vec2 txc = interpolate2D(tes_in[0].TexCoord, tes_in[1].TexCoord, tes_in[2].TexCoord, tes_in[3].TexCoord);
+
+	float displacement = texture(displacementMap, txc).x;
+	pos += normalize(norm) * displacement * displacementFactor;
+
+	gl_Position = mvp * vec4(pos, 1.0);
+}
